@@ -185,7 +185,8 @@ const totalPages = computed(() => {
   } else {
     const rootFolder = selectFolder.value[currentSubCategory.value]
     if (rootFolder) {
-      const valuesArray = Object.values(rootFolder)
+      // 使用 "all" 键获取文件列表，如果不存在则过滤掉 "all" 键
+      let valuesArray = rootFolder.all || Object.keys(rootFolder).filter(key => key !== 'all').map(key => rootFolder[key])
       return Math.ceil(valuesArray.length / pageSize.value)
     }
     return 1
@@ -389,7 +390,8 @@ const selectSecondCategory = (subCategory) => {
     if (rootFolder) {
       hasLoadedAll.value = false
       currentPage.value = 1 // 重置页码
-      const valuesArray = Object.values(rootFolder)
+      // 使用 "all" 键获取文件列表，如果不存在则过滤掉 "all" 键
+      let valuesArray = rootFolder.all || Object.keys(rootFolder).filter(key => key !== 'all').map(key => rootFolder[key])
       // 根据当前页码获取对应的50条数据
       const startIndex = (currentPage.value - 1) * 50
       const endIndex = startIndex + 50
@@ -508,7 +510,8 @@ const loadMoreData = async () => {
       } else {
         const rootFolder = selectFolder.value[currentSubCategory.value]
         if (rootFolder) {
-          const valuesArray = Object.values(rootFolder)
+          // 使用 "all" 键获取文件列表，如果不存在则过滤掉 "all" 键
+          let valuesArray = rootFolder.all || Object.keys(rootFolder).filter(key => key !== 'all').map(key => rootFolder[key])
           // 根据当前页码获取对应的50条数据
           const startIndex = (currentPage.value - 1) * 50
           const endIndex = startIndex + 50
