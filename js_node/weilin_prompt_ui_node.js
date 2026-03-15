@@ -67,38 +67,70 @@ function removeNodeBySeed(seed) {
 // 版本号，用于强制刷新缓存 - 修改此值可强制浏览器重新加载静态资源
 const WEILIN_VERSION = '1.0.1';
 
-function initWindow() {
-  var script = document.createElement('script');
-  // 设置 script 元素的属性
-  script.src = './weilin/prompt_ui/webjs?v=' + WEILIN_VERSION; // 注意确保这里的路径是正确的，并且服务器正在运行。
-  script.type = 'text/javascript';
-  script.async = true;
-  document.head.appendChild(script);
+// 资源加载状态
+let resourcesLoaded = false;
+let resourcesLoading = false;
 
-  // 创建一个新的 link 元素
-  var link = document.createElement('link');
-  // 设置 link 元素的属性
-  link.rel = 'stylesheet';
-  link.type = 'text/css';
-  link.href = './weilin/prompt_ui/file/style.css?v=' + WEILIN_VERSION; // 确保这里的路径是正确的，并且服务器正在运行。
-  document.head.appendChild(link);
+// 按需加载资源 - 只在用户首次打开编辑器时才加载
+function loadResourcesOnDemand() {
+  // 如果资源已加载或正在加载，直接返回
+  if (resourcesLoaded || resourcesLoading) return Promise.resolve();
+  
+  resourcesLoading = true;
+  
+  return new Promise((resolve) => {
+    let loadedCount = 0;
+    const totalResources = 4;
+    
+    const checkAllLoaded = () => {
+      loadedCount++;
+      if (loadedCount === totalResources) {
+        resourcesLoaded = true;
+        resourcesLoading = false;
+        resolve();
+      }
+    };
+    
+    // 加载主JS (648KB) - 使用defer确保不阻塞
+    var script1 = document.createElement('script');
+    script1.src = './weilin/prompt_ui/webjs?v=' + WEILIN_VERSION;
+    script1.type = 'text/javascript';
+    script1.defer = true;
+    script1.onload = checkAllLoaded;
+    script1.onerror = checkAllLoaded;
+    document.head.appendChild(script1);
 
-  // loraStack 脚本载入
-  var script = document.createElement('script');
-  // 设置 script 元素的属性
-  script.src = './weilin/prompt_ui/file/lora_stack.js?v=' + WEILIN_VERSION; // 注意确保这里的路径是正确的，并且服务器正在运行。
-  script.type = 'text/javascript';
-  script.async = true;
-  document.head.appendChild(script);
-  // 创建一个新的 link 元素
-  var link = document.createElement('link');
-  // 设置 link 元素的属性
-  link.rel = 'stylesheet';
-  link.type = 'text/css';
-  link.href = './weilin/prompt_ui/file/lora_stack.css?v=' + WEILIN_VERSION; // 确保这里的路径是正确的，并且服务器正在运行。
-  document.head.appendChild(link);
+    // 加载CSS - 使用preload优化
+    var link1 = document.createElement('link');
+    link1.rel = 'stylesheet';
+    link1.type = 'text/css';
+    link1.href = './weilin/prompt_ui/file/style.css?v=' + WEILIN_VERSION;
+    link1.onload = checkAllLoaded;
+    link1.onerror = checkAllLoaded;
+    document.head.appendChild(link1);
+
+    // loraStack 脚本载入
+    var script2 = document.createElement('script');
+    script2.src = './weilin/prompt_ui/file/lora_stack.js?v=' + WEILIN_VERSION;
+    script2.type = 'text/javascript';
+    script2.defer = true;
+    script2.onload = checkAllLoaded;
+    script2.onerror = checkAllLoaded;
+    document.head.appendChild(script2);
+    
+    // loraStack CSS
+    var link2 = document.createElement('link');
+    link2.rel = 'stylesheet';
+    link2.type = 'text/css';
+    link2.href = './weilin/prompt_ui/file/lora_stack.css?v=' + WEILIN_VERSION;
+    link2.onload = checkAllLoaded;
+    link2.onerror = checkAllLoaded;
+    document.head.appendChild(link2);
+  });
 }
-initWindow()
+
+// 不再自动加载资源，改为按需加载
+// setTimeout(initWindow, 2000);
 
 app.registerExtension({
   name: "weilin.prompt_ui_node",
@@ -386,27 +418,29 @@ app.registerExtension({
 
           } else if (event.data.type === "weilin_prompt_ui_prompt_open_node_wit_seed" && event.data.seed === thisNodeSeed) {
             // 节点导航打开节点UI按钮
+            // 先加载资源
+            loadResourcesOnDemand().then(() => {
+              promptBoxRandomID = generateUUID();
+              // console.log("register====>",promptBoxRandomID)
+              let jsonData = {
+                prompt: nodeTextAreaList[0].value,
+                lora: [],
+                temp_prompt: {},
+                temp_lora: {},
+              }
+              if (nodeData.name === "WeiLinPromptUI" && nodeTextAreaList[1] && nodeTextAreaList[1].value && nodeTextAreaList[1].value.length > 0) {
+                jsonData.lora = JSON.parse(nodeTextAreaList[1].value);
+              }
+              if (nodeTextAreaList[2] && nodeTextAreaList[2].value && nodeTextAreaList[2].value.length > 0) {
+                jsonData.temp_prompt = JSON.parse(nodeTextAreaList[2].value)
+              }
+              if (nodeData.name === "WeiLinPromptUI" && nodeTextAreaList[3] && nodeTextAreaList[3].value && nodeTextAreaList[3].value.length > 0) {
+                jsonData.temp_lora = JSON.parse(nodeTextAreaList[3].value)
+              }
 
-            promptBoxRandomID = generateUUID();
-            // console.log("register====>",promptBoxRandomID)
-            let jsonData = {
-              prompt: nodeTextAreaList[0].value,
-              lora: [],
-              temp_prompt: {},
-              temp_lora: {},
-            }
-            if (nodeData.name === "WeiLinPromptUI" && nodeTextAreaList[1] && nodeTextAreaList[1].value && nodeTextAreaList[1].value.length > 0) {
-              jsonData.lora = JSON.parse(nodeTextAreaList[1].value);
-            }
-            if (nodeTextAreaList[2] && nodeTextAreaList[2].value && nodeTextAreaList[2].value.length > 0) {
-              jsonData.temp_prompt = JSON.parse(nodeTextAreaList[2].value)
-            }
-            if (nodeData.name === "WeiLinPromptUI" && nodeTextAreaList[3] && nodeTextAreaList[3].value && nodeTextAreaList[3].value.length > 0) {
-              jsonData.temp_lora = JSON.parse(nodeTextAreaList[3].value)
-            }
-
-            const data = JSON.stringify(jsonData)
-            window.parent.postMessage({ type: 'weilin_prompt_ui_openPromptBox', id: promptBoxRandomID, prompt: data, node: nodeData.name }, '*')
+              const data = JSON.stringify(jsonData)
+              window.parent.postMessage({ type: 'weilin_prompt_ui_openPromptBox', id: promptBoxRandomID, prompt: data, node: nodeData.name }, '*')
+            });
           
           } else if (event.data.type === 'weilin_prompt_ui_prompt_finish_lora_stack_' + promptBoxRandomID) {
             // 接收到更新LoraStack内容消息
@@ -476,7 +510,10 @@ app.registerExtension({
         // 添加按钮点击事件
         if (nodeData.name === "WeiLinPromptUI" || nodeData.name === "WeiLinPromptUIWithoutLora") {
           // 节点按钮点击事件 - 打开提示词编辑器
-          this.addWidget("button", localLanguage, '', ($e) => {
+          this.addWidget("button", localLanguage, '', async ($e) => {
+            // 先加载资源（如果还未加载）
+            await loadResourcesOnDemand();
+            
             // console.log(thisNodeName)
             // 发送消息给父窗口
             // console.log(global_randomID)
@@ -507,7 +544,10 @@ app.registerExtension({
 
         if (nodeData.name === "WeiLinPromptUI" || nodeData.name === "WeiLinPromptUIOnlyLoraStack") {
           // 节点按钮点击事件 - 打开Lora堆
-          this.addWidget("button", localOpenLoraLanguage, '', ($e) => {
+          this.addWidget("button", localOpenLoraLanguage, '', async ($e) => {
+            // 先加载资源（如果还未加载）
+            await loadResourcesOnDemand();
+            
             // console.log(thisNodeName)
             // 发送消息给父窗口
             // console.log(global_randomID)
