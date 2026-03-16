@@ -1,5 +1,57 @@
-import { app } from '../../scripts/app.js'
-// 提示词 Node
+// WeiLin Prompt UI Node - JavaScript Extension
+// ComfyUI 2.0兼容性：从window.comfyAPI获取app对象
+
+console.log('[WeiLin] JavaScript file loaded: weilin_prompt_ui_node.js');
+
+// 加载CSS修复文件
+(function() {
+    // 尝试多个可能的路径
+    const possiblePaths = [
+        './extensions/weilin-comfyui-tools/weilin_fix.css',
+        './extensions/weilin-comfyui-tools/js_node/weilin_fix.css',
+        './weilin_fix.css'
+    ];
+    
+    possiblePaths.forEach(path => {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = path;
+        document.head.appendChild(link);
+    });
+    
+    console.log('[WeiLin] CSS fix files loaded');
+})();
+
+// 防止重复注册
+if (window.weilinExtensionRegistered) {
+  console.log('[WeiLin] Extension already registered, skipping...');
+} else {
+  window.weilinExtensionRegistered = true;
+  
+  // 等待app对象可用
+  function waitForApp(callback, maxAttempts = 50) {
+    let attempts = 0;
+    const check = () => {
+      attempts++;
+      // ComfyUI 2.0: 从window.comfyAPI获取app对象
+      const app = window.comfyAPI?.app?.app || window.app || window.comfyApp;
+      if (app) {
+        console.log('[WeiLin] App object found:', app);
+        callback(app);
+      } else if (attempts < maxAttempts) {
+        setTimeout(check, 100);
+      } else {
+        console.error('[WeiLin] Failed to find app object after', maxAttempts, 'attempts');
+        console.log('[WeiLin] window.comfyAPI:', window.comfyAPI);
+        console.log('[WeiLin] window.app:', window.app);
+        console.log('[WeiLin] window.comfyApp:', window.comfyApp);
+      }
+    };
+    check();
+  }
+
+  // 提示词 Node
 
 // localStorage.setItem("weilin_prompt_ui_onfirst", 0);
 
@@ -132,27 +184,130 @@ function loadResourcesOnDemand() {
 // 不再自动加载资源，改为按需加载
 // setTimeout(initWindow, 2000);
 
-app.registerExtension({
+// 等待app对象可用后注册扩展
+waitForApp((app) => {
+  console.log('[WeiLin] Registering extension...');
+  
+  app.registerExtension({
   name: "weilin.prompt_ui_node",
-  async init() {},
-  async setup() {},
+  async init() {
+    console.log('[WeiLin] Extension init');
+    
+    // 检查ComfyUI是否识别了WeiLin节点
+    setTimeout(() => {
+      console.log('[WeiLin] Checking if WeiLin nodes are registered...');
+      
+      // 尝试获取所有已注册的节点
+      if (window.comfyAPI && window.comfyAPI.app && window.comfyAPI.app.app) {
+        const app = window.comfyAPI.app.app;
+        console.log('[WeiLin] App object:', app);
+        
+        // 检查nodes属性
+        if (app.nodes) {
+          console.log('[WeiLin] Registered nodes:', Object.keys(app.nodes));
+          
+          // 查找WeiLin节点
+          const weilinNodes = Object.keys(app.nodes).filter(name => name.includes('WeiLin'));
+          console.log('[WeiLin] WeiLin nodes found:', weilinNodes);
+        }
+      }
+    }, 2000);
+  },
+  async setup() {
+    console.log('[WeiLin] Extension setup');
+  },
   async beforeRegisterNodeDef(nodeType, nodeData, app) {
+    console.log('[WeiLin] beforeRegisterNodeDef called, nodeData.name:', nodeData.name);
+    
+    // 检查是否是WeiLin节点
+    if (
+      nodeData.name === "WeiLinPromptUI" ||
+      nodeData.name === "WeiLinPromptUIWithoutLora" ||
+      nodeData.name === "WeiLinPromptUIOnlyLoraStack"
+    ) {
+      console.log('[WeiLin] ⭐ Matching node found:', nodeData.name);
+      console.log('[WeiLin] Node data:', nodeData);
+      console.log('[WeiLin] Node type:', nodeType);
+    }
     // console.log(app)
     if (
       nodeData.name === "WeiLinPromptUI" ||
       nodeData.name === "WeiLinPromptUIWithoutLora" ||
       nodeData.name === "WeiLinPromptUIOnlyLoraStack"
     ) {
-      // console.log(nodeData)
+      console.log('[WeiLin] Matching node found:', nodeData.name);
       // Create node
       const onNodeCreated = nodeType.prototype.onNodeCreated;
       nodeType.prototype.onNodeCreated = async function () {
+        console.log('[WeiLin] onNodeCreated called for:', nodeData.name);
         const r = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
 
         const thisNodeName = nodeData.name // 存储当前的节点名称
         let nodeTextAreaList = [] // 按顺序载入element，name="positive" || "lora_str" || "temp_str"
         let nodeWidgetList = [] // 保存widget引用，用于同步更新widget.value
         const thisNodeSeed = generateUUID(); // 随机唯一种子ID
+
+        // 清理可能残留的遮罩层
+        const cleanupOverlays = () => {
+          // 清理loading遮罩层
+          const overlays = document.querySelectorAll('.loading-overlay, .weilin-comfyui-loading-overlay');
+          overlays.forEach(overlay => {
+            // 只移除不在DOM树中的孤立遮罩层
+            if (!overlay.closest('.weilin-prompt-ui-container') && !overlay.closest('.weilin-lora-manager-container')) {
+              overlay.remove();
+            }
+          });
+        };
+        cleanupOverlays();
+        
+        // 延迟再次清理，确保所有DOM操作完成
+        setTimeout(cleanupOverlays, 100);
+        setTimeout(cleanupOverlays, 500);
+        
+        // ========================================
+        // 核心修复：解决dom-widget容器遮挡画布的问题
+        // ========================================
+        // 问题：dom-widget容器有 position:fixed 和 size-full，遮挡整个画布
+        // 解决：只修复当前节点的dom-widget，不影响其他节点
+        // ========================================
+        const fixCurrentNodeDomWidgets = () => {
+          if (!this.widgets) return;
+          
+          this.widgets.forEach(widget => {
+            if (widget.element) {
+              // 找到widget的dom-widget容器
+              let parent = widget.element.parentElement;
+              while (parent) {
+                if (parent.classList && parent.classList.contains('dom-widget')) {
+                  // 只修复当前节点的dom-widget
+                  // 设置pointer-events: none让画布可以交互
+                  parent.style.setProperty('pointer-events', 'none', 'important');
+                  // 设置position: absolute让容器跟随节点
+                  parent.style.setProperty('position', 'absolute', 'important');
+                  // 移除size-full类
+                  parent.classList.remove('size-full');
+                  
+                  // 确保内部元素可以交互
+                  if (widget.element) {
+                    widget.element.style.setProperty('pointer-events', 'auto', 'important');
+                  }
+                  
+                  console.log('[WeiLin] Fixed dom-widget for node:', nodeData.name);
+                  break;
+                }
+                parent = parent.parentElement;
+              }
+            }
+          });
+        };
+        
+        // 立即执行修复
+        fixCurrentNodeDomWidgets();
+        
+        // 延迟执行，确保DOM完全加载
+        setTimeout(fixCurrentNodeDomWidgets, 100);
+        setTimeout(fixCurrentNodeDomWidgets, 500);
+        setTimeout(fixCurrentNodeDomWidgets, 1000);
 
         if (nodeData.name === "WeiLinPromptUI" || nodeData.name === "WeiLinPromptUIWithoutLora") {
           hideWidgetForGood(this, this.widgets.find(w => w.name === "temp_str"))
@@ -574,21 +729,29 @@ app.registerExtension({
         const originalOnRemoved = this.onRemoved;
         // 节点被删除事件
         this.onRemoved = () => {
+          console.log('[WeiLin] onRemoved called for:', nodeData.name);
+          
           // 调用原有的onRemoved函数
           if (originalOnRemoved) {
             originalOnRemoved.apply(this);
           }
-          
+
           // 移除消息监听器，防止内存泄漏和事件冲突
           window.removeEventListener('message', messageHandler, false);
-          
+
+          // 清理可能残留的遮罩层
+          const overlays = document.querySelectorAll('.loading-overlay, .weilin-comfyui-loading-overlay');
+          overlays.forEach(overlay => {
+            overlay.remove();
+          });
+
           // 元素被销毁 事件发送更新元素
           if (nodeData.name === "WeiLinPromptUI" ||
             nodeData.name === "WeiLinPromptUIWithoutLora") {
             removeNodeBySeed(thisNodeSeed);
             window.parent.postMessage({ type: 'weilin_prompt_ui_update_node_list_info', nodeList: globalNodeList }, '*')
           }
-          
+
           // 清理Lora Stack相关数据
           if (nodeData.name === "WeiLinPromptUIOnlyLoraStack") {
             if (window.weilinGlobalSelectedLoras && window.weilinGlobalSelectedLoras[thisNodeSeed]) {
@@ -616,6 +779,8 @@ app.registerExtension({
     }
   },
 });
+}); // waitForApp回调结束
+} // 防止重复注册的else块结束
 
 
 //from melmass
