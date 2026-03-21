@@ -24,9 +24,19 @@ Due to limited personal time, the frequency of updating plug-ins will not be ver
 
 # Version update introduction
 
-> Last updated: 2025-12-21
+> Last updated: 2026-03-21
 
-> 0.0.72 Public Beta Version Introduction: If you want to use this plugin, please be sure to join our official QQ group (1018231382)! 
+> 0.0.73 Public Beta Version Introduction: If you want to use this plugin, please be sure to join our official QQ group (1018231382)! 
+>
+> 1. Merger PR [#63](https://github.com/weilin9999/WeiLin-Comfyui-Tools/pull/63) thank you for your friend's help
+>
+> 2. Modified some logical codes
+>
+
+<details>
+<summary>Click here for more updates from the past</summary>
+
+> 0.0.72 Public Beta Version 2025-12-21
 >
 > 1. The API translation mode has returned. Currently, the translation interface has been rewritten and only supports Alibaba Translation Interface, Bing Translation interface, and Youdao Translation interface (this interface has request restrictions and is not recommended for use). At present, all three interfaces are free, and we will write paid translation interfaces for integration in the future
 >
@@ -34,9 +44,6 @@ Due to limited personal time, the frequency of updating plug-ins will not be ver
 >
 > 3. Merger PR [#57](https://github.com/weilin9999/WeiLin-Comfyui-Tools/pull/57) thank you for your friend's help
 >
-
-<details>
-<summary>Click here for more updates from the past</summary>
 
 > 0.0.71 Public Beta Version 2025-12-20
 >

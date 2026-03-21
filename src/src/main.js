@@ -28,3 +28,28 @@ app.mount(div)
 
 console.log(`WeiLin Prompt UI is running - version ${version}`)
 console.log(`WeiLin 节点插件已运行 - 版本 ${version}`)
+
+
+const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        // 检查新增的节点中是否有目标 class
+        const elements = document.querySelectorAll('#weilin-hidden-weight');
+        if (elements.length > 0) {
+            for (const element of elements) {
+               const parentEl = element.closest('.lg-node-widget');
+                parentEl.style.display = 'none';
+                // console.log('目标元素已隐藏', parentEl);
+            }
+            // observer.disconnect(); // 如果只需要检测一次，可以断开观察
+        }
+    });
+});
+
+// 配置观察选项
+const config = {
+    childList: true, // 监听子节点的变化
+    subtree: true    // 监听整个子树
+};
+
+// 开始观察 document.body（或指定其他父元素）
+observer.observe(document.body, config);

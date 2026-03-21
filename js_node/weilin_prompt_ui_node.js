@@ -43,9 +43,9 @@ if (window.weilinExtensionRegistered) {
         setTimeout(check, 100);
       } else {
         console.error('[WeiLin] Failed to find app object after', maxAttempts, 'attempts');
-        console.log('[WeiLin] window.comfyAPI:', window.comfyAPI);
-        console.log('[WeiLin] window.app:', window.app);
-        console.log('[WeiLin] window.comfyApp:', window.comfyApp);
+        // console.log('[WeiLin] window.comfyAPI:', window.comfyAPI);
+        // console.log('[WeiLin] window.app:', window.app);
+        // console.log('[WeiLin] window.comfyApp:', window.comfyApp);
       }
     };
     check();
@@ -242,7 +242,7 @@ waitForApp((app) => {
       // 尝试获取所有已注册的节点
       if (window.comfyAPI && window.comfyAPI.app && window.comfyAPI.app.app) {
         const app = window.comfyAPI.app.app;
-        console.log('[WeiLin] App object:', app);
+        // console.log('[WeiLin] App object:', app);
         
         // 检查nodes属性
         if (app.nodes) {
@@ -250,7 +250,7 @@ waitForApp((app) => {
           
           // 查找WeiLin节点
           const weilinNodes = Object.keys(app.nodes).filter(name => name.includes('WeiLin'));
-          console.log('[WeiLin] WeiLin nodes found:', weilinNodes);
+          // console.log('[WeiLin] WeiLin nodes found:', weilinNodes);
         }
       }
     }, 2000);
@@ -259,7 +259,7 @@ waitForApp((app) => {
     console.log('[WeiLin] Extension setup');
   },
   async beforeRegisterNodeDef(nodeType, nodeData, app) {
-    console.log('[WeiLin] beforeRegisterNodeDef called, nodeData.name:', nodeData.name);
+    // console.log('[WeiLin] beforeRegisterNodeDef called, nodeData.name:', nodeData.name);
     
     // 检查是否是WeiLin节点
     if (
@@ -899,12 +899,13 @@ waitForApp((app) => {
 //from melmass
 // https://github.com/kijai/ComfyUI-KJNodes/blob/main/web/js/spline_editor.js
 function hideWidgetForGood(node, widget, suffix = '') {
+
   widget.origType = widget.type
   widget.origComputeSize = widget.computeSize
   widget.origSerializeValue = widget.serializeValue
   widget.computeSize = () => [0, -4] // -4 is due to the gap litegraph adds between widgets automatically
   widget.type = "converted-widget" + suffix
-
+  widget.element.setAttribute("id", "weilin-hidden-weight");
   widget.element.style.display = 'none'
   // 启用序列化，确保widget值被保存到工作流JSON中
   widget.serializeValue = () => {

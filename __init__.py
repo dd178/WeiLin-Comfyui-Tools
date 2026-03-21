@@ -8,6 +8,13 @@ custom_node_dir = os.path.dirname(os.path.realpath(__file__))
 js_dir = os.path.join(custom_node_dir, "js_node")
 nodes.EXTENSION_WEB_DIRS["weilin-comfyui-tools"] = js_dir
 
+
+# Server Init
+from .install_request import *
+
+install_requirements()
+
+
 import json
 import locale
 import logging
@@ -18,11 +25,6 @@ import comfy.lora
 import comfy.utils
 
 from .app.server.prompt_server import *
-
-# Server Init
-from .install_request import *
-
-install_requirements()
 
 # 检测系统语言
 localLan = locale.getdefaultlocale()[0]
