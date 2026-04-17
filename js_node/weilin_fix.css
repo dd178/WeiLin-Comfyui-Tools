@@ -73,6 +73,7 @@
 .dom-widget.size-full textarea,
 .dom-widget.size-full input,
 .dom-widget.size-full select,
-.dom-widget.size-full button {
+.dom-widget.size-full button,
+.dom-widget.size-full canvas {
     pointer-events: auto !important;
 }
